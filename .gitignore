@@ -39,6 +39,7 @@
 *.pdb
 .zig-cache/
 zig-out/
+.vscode/
 
 # Debug files
 *.dSYM/
