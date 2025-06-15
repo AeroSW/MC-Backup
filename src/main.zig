@@ -28,19 +28,30 @@ const BackupPair: type = struct {
     name: []const u8
 };
 
+/// Method that retrieves the environment variables from the system.
 pub fn getEnvironmentVariable(mem_allocator: std.mem.Allocator, var_name: []const u8) ![]const u8 {
     const env_map = try std.process.getEnvMap(mem_allocator);
     const env = env_map.get(var_name) orelse "null";
     return env;
 }
 
+/// This function represents the literal step of backing the
+/// Minecraft server using Nanozip (7-zip wrapper application).
+/// 
+/// 2 folders are excluded, which are the Backup folder and mods folder.
+/// mods folder contains mods for server, so we do not want to copy that
+/// into the backup, since, it will be large.  We don't want to backup the
+/// backups because that could potentially get exponentially large if we
+/// don't run the cleanup step.
 pub fn backupServer(arena_alloc: std.mem.Allocator) !void {
     var ts: ctime.time_t = undefined;
     _ = ctime.time(&ts);
     const time_info = ctime.localtime(&ts);
     const heap_alloc = std.heap.page_allocator;
+    // tm_year is number of years since 1900, so add 1900 to result to get correct year.
+    // tm_month is 0-based
     const dt_str = try std.fmt.allocPrint(arena_alloc, "{d}-{d}-{d}_{d}",
-        .{time_info.tm_year, time_info.tm_mon, time_info.tm_mday, time_info.tm_hour});
+        .{(time_info.*.tm_year + 1900), (time_info.*.tm_mon + 1), time_info.*.tm_mday, time_info.*.tm_hour});
     const backup_name = try std.mem.concat(arena_alloc, u8, .{
         backup_dir,
         dt_str,
@@ -60,6 +71,9 @@ pub fn backupServer(arena_alloc: std.mem.Allocator) !void {
     archival_process.wait();
 }
 
+/// IN-PROGRESS
+/// Method for cleaning up backups.  Still trying to think of a good way to test
+/// pieces of this that I am unsure about.
 pub fn cleanupBackups(arena_alloc: std.mem.Allocator) !void {
     var backup = try std.fs.cwd().openDir(backup_dir, .{});
     defer backup.close();
@@ -76,14 +90,18 @@ pub fn cleanupBackups(arena_alloc: std.mem.Allocator) !void {
     }
     std.mem.sort(BackupPair, pair_list.items, {}, Comparitor);
     while(pair_list.items.len > 10) {
+        // TODO: Fetch name and delete file
         _ = try pair_list.pop();
     }
 }
 
+/// Comparitor for sorting the backups in descending order for optimal
+/// deleting and popping.
 pub fn Comparitor(_: void, itm_1: BackupPair, itm_2: BackupPair) bool {
     return itm_1.timestamp > itm_2.timestamp;
 }
 
+/// TODO: Check for backup folder existence.  Create if missing
 pub fn main() !void {
     var mem_buff: [2000]u8 = undefined;
     var fixed_buff = std.heap.FixedBufferAllocator.init(&mem_buff);
@@ -138,4 +156,25 @@ test "Sort Testing Fn" {
     try std.testing.expect(std.mem.eql(u8, item_2.name, li.items[2].name));
     try std.testing.expect(std.mem.eql(u8, item_1.name, li.items[1].name));
     try std.testing.expect(std.mem.eql(u8, item_4.name, li.items[0].name));
+}
+
+test "CTime Usage" {
+    var mem_buff: [2000]u8 = undefined;
+    var fixed_buff = std.heap.FixedBufferAllocator.init(&mem_buff);
+    const fixed_buff_alloc = fixed_buff.allocator();
+    var arena_alloc = std.heap.ArenaAllocator.init(fixed_buff_alloc);
+    defer arena_alloc.deinit();
+    const alloc = arena_alloc.allocator();
+    var ts: ctime.time_t = undefined;
+    _ = ctime.time(&ts);
+    const time_info = ctime.localtime(&ts);
+    // tm_year is number of years since 1900, so add 1900 to result to get correct year.
+    // tm_month is 0-based
+    const dt_str = try std.fmt.allocPrint(alloc, "{d}-{d}-{d}_{d}",
+        .{(time_info.*.tm_year + 1900), (time_info.*.tm_mon + 1), time_info.*.tm_mday, time_info.*.tm_hour});
+    std.debug.print("\n{s}\n",.{dt_str});
+    try std.testing.expect(time_info.*.tm_year > 100);
+    try std.testing.expect(time_info.*.tm_mon < 12);
+    try std.testing.expect(time_info.*.tm_mday < 32);
+    try std.testing.expect(time_info.*.tm_hour < 24);
 }

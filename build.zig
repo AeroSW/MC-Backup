@@ -32,6 +32,7 @@ pub fn build(b: *std.Build) void {
         .name = "MC_Backup",
         .root_module = exe_mod,
     });
+    exe.linkLibC();
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
@@ -63,6 +64,7 @@ pub fn build(b: *std.Build) void {
 
     const exe_unit_tests = b.addTest(.{
         .root_module = exe_mod,
+        .link_libc = true
     });
 
     const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
