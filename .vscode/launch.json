@@ -1,0 +1,29 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "args": [],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "internalConsoleOptions": "neverOpen",
+      "name": "Launch",
+      "preLaunchTask": "Build (Debug)",
+      "program": "zig-out/bin/MC_Backup.exe",
+      "request": "launch",
+      "type": "lldb"
+    },
+    {
+      "args": ["${file}"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "internalConsoleOptions": "neverOpen",
+      "name": "Test",
+      "program": "${workspaceFolder}/zig-cache/o/1cc6fcb28bd82aac42117ebed760bdfe/test",
+      "request": "launch",
+      "type": "lldb",
+    }
+  ]
+}
