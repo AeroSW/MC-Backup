@@ -38,6 +38,7 @@
 *.obj
 *.pdb
 .zig-cache/
+zig-out/
 
 # Debug files
 *.dSYM/
